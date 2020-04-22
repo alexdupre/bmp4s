@@ -41,7 +41,7 @@ class BMPImageLine(info: BMPImageInfo) {
           new Color(r, g, b)
         case 16 =>
           val rgb = rawLine.getShort()
-          new Color(rgb >> 10, (rgb >> 5) & 0xff, rgb & 0xff)
+          new Color((rgb >> 10 << 3) & 0xff, (rgb >> 5 << 3) & 0xff, (rgb << 3) & 0xff)
       }
     }
   }
