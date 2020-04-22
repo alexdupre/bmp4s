@@ -1,9 +1,8 @@
 package com.alexdupre.bmp
 
 import java.awt.Color
-import java.nio.channels.ReadableByteChannel
 
-class BMPReader(in: ReadableByteChannel) {
+class BMPReader(in: ReaderInterface) {
 
   val info = BMPImageInfo.read(in)
 

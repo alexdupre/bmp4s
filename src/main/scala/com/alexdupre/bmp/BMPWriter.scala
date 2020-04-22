@@ -1,9 +1,8 @@
 package com.alexdupre.bmp
 
 import java.awt.Color
-import java.nio.channels.WritableByteChannel
 
-class BMPWriter(out: WritableByteChannel, info: BMPImageInfo, allowHuge: Boolean = false) {
+class BMPWriter(out: WriterInterface, info: BMPImageInfo, allowHuge: Boolean = false) {
 
   private val line    = new BMPImageLine(info)
   private var curLine = 0

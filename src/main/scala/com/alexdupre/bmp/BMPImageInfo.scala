@@ -2,7 +2,6 @@ package com.alexdupre.bmp
 
 import java.awt.Color
 import java.nio.{ByteBuffer, ByteOrder}
-import java.nio.channels.{ReadableByteChannel, WritableByteChannel}
 import java.nio.charset.StandardCharsets
 import java.util.Arrays
 
@@ -34,7 +33,7 @@ case class BMPImageInfo(
   private val fileSize   = metadataTotalSize + imageSize
   private val isStandard = fileSize <= 0xffffffffL
 
-  def writeHeader(out: WritableByteChannel, allowHuge: Boolean = false): Unit = {
+  def writeHeader(out: WriterInterface, allowHuge: Boolean = false): Unit = {
     require(
       isStandard || allowHuge,
       "Image too big to be stored as a standard BMP"
@@ -44,7 +43,7 @@ case class BMPImageInfo(
     writeDIBHeader(out)
   }
 
-  private def writeFileHeader(out: WritableByteChannel): Unit = {
+  private def writeFileHeader(out: WriterInterface): Unit = {
     val buf = ByteBuffer.allocate(BMPImageInfo.FileHeaderSize).order(ByteOrder.LITTLE_ENDIAN)
     buf.put(BMPImageInfo.MagicHeader)
     buf.putInt(if (isStandard) fileSize.toInt else 0)
@@ -54,10 +53,10 @@ case class BMPImageInfo(
 
     buf.putInt(metadataTotalSize) // offset to image data
 
-    out.write(buf.rewind())
+    out.write(buf.array())
   }
 
-  private def writeDIBHeader(out: WritableByteChannel): Unit = {
+  private def writeDIBHeader(out: WriterInterface): Unit = {
     val buf = ByteBuffer.allocate(BMPImageInfo.DIBHeaderSize).order(ByteOrder.LITTLE_ENDIAN)
     buf.putInt(BMPImageInfo.DIBHeaderSize)
 
@@ -75,21 +74,21 @@ case class BMPImageInfo(
     buf.putInt(vertPPM)
 
     buf.putInt(
-      if (colorDepth > 8 || 1 << colorDepth == palette.size) 0
+      if (colorDepth > 8 || 1 << colorDepth == palette.size) 0 // all colors used
       else palette.size
-    )             // all colors used
+    )
     buf.putInt(0) // important colors
 
-    out.write(buf.rewind())
+    out.write(buf.array())
 
     writePalette(out)
   }
 
-  private def writePalette(out: WritableByteChannel): Unit = {
+  private def writePalette(out: WriterInterface): Unit = {
     val buf =
       ByteBuffer.allocate(paletteHeaderSize).order(ByteOrder.LITTLE_ENDIAN)
     palette.foreach(c => buf.putInt(c.getRGB & 0x00ffffff))
-    out.write(buf.rewind())
+    out.write(buf.array())
   }
 
 }
@@ -100,21 +99,19 @@ object BMPImageInfo {
   private val FileHeaderSize = 14
   private val DIBHeaderSize  = 40
 
-  private def readBuf(in: ReadableByteChannel, len: Int): ByteBuffer = {
-    val buf = ByteBuffer.allocate(len).order(ByteOrder.LITTLE_ENDIAN)
-    do {
-      in.read(buf)
-    } while (buf.hasRemaining)
-    buf
+  private def readBuf(in: ReaderInterface, len: Int): ByteBuffer = {
+    val buf = new Array[Byte](len)
+    in.read(buf)
+    ByteBuffer.wrap(buf).order(ByteOrder.LITTLE_ENDIAN)
   }
 
-  private def readFileHeader(in: ReadableByteChannel): Int = {
+  private def readFileHeader(in: ReaderInterface): Int = {
     val buf = readBuf(in, FileHeaderSize)
     require(Arrays.equals(Array(buf.get(0), buf.get(1)), MagicHeader), "Not a Windows bitmap")
     buf.getInt(10)
   }
 
-  private def readDIBHeader(in: ReadableByteChannel): BMPImageInfo = {
+  private def readDIBHeader(in: ReaderInterface): BMPImageInfo = {
     val buf = readBuf(in, DIBHeaderSize)
     buf.rewind()
     require(buf.getInt() == DIBHeaderSize, "Not a Windows 3.x bitmap")
@@ -136,13 +133,13 @@ object BMPImageInfo {
     BMPImageInfo(width, if (topDown) -height else height, horizPPM, vertPPM, colorDepth, palette, topDown)
   }
 
-  private def readPalette(in: ReadableByteChannel, size: Int): Array[Color] = {
+  private def readPalette(in: ReaderInterface, size: Int): Array[Color] = {
     val buf = readBuf(in, size * 4)
     buf.rewind()
     Array.fill(size)(new Color(buf.getInt()))
   }
 
-  def read(in: ReadableByteChannel): BMPImageInfo = {
+  def read(in: ReaderInterface): BMPImageInfo = {
     val offset = readFileHeader(in)
     val info   = readDIBHeader(in)
     val skip   = offset - info.metadataTotalSize // skip bytes if needed

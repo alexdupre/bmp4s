@@ -1,9 +1,8 @@
 package com.alexdupre.bmp
 
 import java.awt.Color
-import java.nio.channels.SeekableByteChannel
 
-class SeekableBMPReader(in: SeekableByteChannel) {
+class SeekableBMPReader(in: SeekableInterface) {
 
   val info = BMPImageInfo.read(in)
 
