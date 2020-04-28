@@ -9,20 +9,22 @@ class BMPWriter(out: WriterInterface, info: BMPImageInfo, allowHuge: Boolean = f
 
   info.writeHeader(out, allowHuge)
 
+  def needsNextLine(): Boolean = curLine < info.height
+
   def writeColorLine(row: Array[Color]): Unit = {
-    require(curLine < info.height, "All lines have been already written")
+    require(needsNextLine(), "All lines have been already written")
     line.writeColorLine(out, row)
     curLine += 1
   }
 
   def writeIndexLine(row: Array[Byte]): Unit = {
-    require(curLine < info.height, "All lines have been already written")
+    require(needsNextLine(), "All lines have been already written")
     line.writeIndexLine(out, row)
     curLine += 1
   }
 
   def close(): Unit = {
-    require(curLine == info.height, "Not all lines have been written")
+    require(!needsNextLine(), "Not all lines have been written")
     out.close()
   }
 
