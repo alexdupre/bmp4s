@@ -2,9 +2,9 @@ organization := "com.alexdupre"
 
 name := "bmp4s"
 
-version := "0.3"
+version := "0.4"
 
-scalaVersion := "2.13.2"
+scalaVersion := "2.13.3"
 
 scalacOptions := List("-feature", "-unchecked", "-deprecation", "-explaintypes", "-encoding", "UTF8", "-language:postfixOps")
 
