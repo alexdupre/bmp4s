@@ -1,7 +1,5 @@
 package com.alexdupre.bmp
 
-import java.awt.Color
-
 class BMPReader(in: ReaderInterface) {
 
   val info = BMPImageInfo.read(in)
@@ -11,13 +9,13 @@ class BMPReader(in: ReaderInterface) {
 
   def hasNextLine(): Boolean = curLine < info.height
 
-  def getColorLine(sharedBuffer: Boolean = false): Array[Color] = {
+  def getColorLine(sharedBuffer: Boolean = false): Array[Int] = {
     require(hasNextLine(), "All lines have been already read")
     curLine += 1
     line.getColorLine(in, sharedBuffer)
   }
 
-  def readColorLine(out: Array[Color], offset: Int = 0): Unit = {
+  def readColorLine(out: Array[Int], offset: Int = 0): Unit = {
     require(hasNextLine(), "All lines have been already read")
     curLine += 1
     line.readColorLine(in, out, offset)

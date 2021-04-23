@@ -1,6 +1,5 @@
 package com.alexdupre.bmp
 
-import java.awt.Color
 import java.nio.{ByteBuffer, ByteOrder}
 
 class BMPImageLine(info: BMPImageInfo) {
@@ -9,14 +8,15 @@ class BMPImageLine(info: BMPImageInfo) {
 
   private def wrappedRawLine() = ByteBuffer.wrap(rawLine).order(ByteOrder.LITTLE_ENDIAN)
 
-  private lazy val colorLineBuf = new Array[Color](info.width)
-  def getColorLine(in: ReaderInterface, sharedBuffer: Boolean = false): Array[Color] = {
-    val out = if (sharedBuffer) colorLineBuf else new Array[Color](info.width)
+  private lazy val colorLineBuf = new Array[Int](info.width)
+
+  def getColorLine(in: ReaderInterface, sharedBuffer: Boolean = false): Array[Int] = {
+    val out = if (sharedBuffer) colorLineBuf else new Array[Int](info.width)
     readColorLine(in, out)
     out
   }
 
-  def readColorLine(in: ReaderInterface, line: Array[Color], offset: Int = 0): Unit = {
+  def readColorLine(in: ReaderInterface, line: Array[Int], offset: Int = 0): Unit = {
     if (info.colorDepth <= 8) {
       val indexes = getIndexLine(in, sharedBuffer = true)
       for (i <- 0 until line.length) line(i + offset) = info.palette(indexes(i) & 0xff)
@@ -25,20 +25,25 @@ class BMPImageLine(info: BMPImageInfo) {
       in.read(rawLine)
       val dataLine = wrappedRawLine()
       for (i <- 0 until line.length) line(i + offset) = info.colorDepth match {
-        case 32 => new Color(dataLine.getInt())
+        case 32 => dataLine.getInt() & 0xffffff
         case 24 =>
           val b = dataLine.get() & 0xff
           val g = dataLine.get() & 0xff
           val r = dataLine.get() & 0xff
-          new Color(r, g, b)
+          (r << 16) | (g << 8) | b
         case 16 =>
           val rgb = dataLine.getShort()
-          new Color((rgb >> 10 << 3) & 0xff, (rgb >> 5 << 3) & 0xff, (rgb << 3) & 0xff)
+          val r   = (rgb >> 10 << 3) & 0xff
+          val g   = (rgb >> 5 << 3) & 0xff
+          val b   = (rgb << 3) & 0xff
+          (r << 16) | (g << 8) | b
+
       }
     }
   }
 
   private lazy val indexLineBuf = new Array[Byte](info.width)
+
   def getIndexLine(in: ReaderInterface, sharedBuffer: Boolean = false): Array[Byte] = {
     val out = if (sharedBuffer) indexLineBuf else new Array[Byte](info.width)
     readIndexLine(in, out)
@@ -60,22 +65,26 @@ class BMPImageLine(info: BMPImageInfo) {
     }
   }
 
-  def writeColorLine(out: WriterInterface, row: Array[Color]): Unit = {
+  def writeColorLine(out: WriterInterface, row: Array[Int]): Unit = {
     if (info.colorDepth <= 8) writeIndexLine(out, row.map(info.paletteMap))
     else {
       require(row.length == info.width, "Invalid row length")
       val dataLine = wrappedRawLine()
       info.colorDepth match {
-        case 32 => row.foreach(c => dataLine.putInt(c.getRGB))
+        case 32 => row.foreach(c => dataLine.putInt(c))
         case 24 =>
           row.foreach { c =>
-            dataLine.put(c.getBlue.toByte)
-            dataLine.put(c.getGreen.toByte)
-            dataLine.put(c.getRed.toByte)
+            dataLine.put(c.toByte)
+            dataLine.put((c >> 8).toByte)
+            dataLine.put((c >> 16).toByte)
           }
         case 16 =>
           row.foreach { c =>
-            val rgb = (c.getRed >> 3 << 10) | (c.getGreen >> 3 << 5) | (c.getBlue >> 3)
+            val mask = 0x1f << 3
+            val r    = c & (mask << 16)
+            val g    = c & (mask << 8)
+            val b    = c & mask
+            val rgb  = (r >> 9) | (g >> 6) | (b >> 3)
             dataLine.putShort(rgb.toShort)
           }
       }

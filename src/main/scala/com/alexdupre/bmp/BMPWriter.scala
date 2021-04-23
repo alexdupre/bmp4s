@@ -1,7 +1,5 @@
 package com.alexdupre.bmp
 
-import java.awt.Color
-
 class BMPWriter(out: WriterInterface, info: BMPImageInfo, allowHuge: Boolean = false) {
 
   private val line    = new BMPImageLine(info)
@@ -11,7 +9,7 @@ class BMPWriter(out: WriterInterface, info: BMPImageInfo, allowHuge: Boolean = f
 
   def needsNextLine(): Boolean = curLine < info.height
 
-  def writeColorLine(row: Array[Color]): Unit = {
+  def writeColorLine(row: Array[Int]): Unit = {
     require(needsNextLine(), "All lines have been already written")
     line.writeColorLine(out, row)
     curLine += 1

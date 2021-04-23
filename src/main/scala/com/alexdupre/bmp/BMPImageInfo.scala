@@ -1,6 +1,5 @@
 package com.alexdupre.bmp
 
-import java.awt.Color
 import java.nio.{ByteBuffer, ByteOrder}
 import java.nio.charset.StandardCharsets
 import java.util.Arrays
@@ -11,7 +10,7 @@ case class BMPImageInfo(
     horizPPM: Int,
     vertPPM: Int,
     colorDepth: Int,
-    palette: Array[Color] = Array.empty,
+    palette: Array[Int] = Array.empty,
     topDown: Boolean = false
 ) {
 
@@ -87,7 +86,7 @@ case class BMPImageInfo(
   private def writePalette(out: WriterInterface): Unit = {
     val buf =
       ByteBuffer.allocate(paletteHeaderSize).order(ByteOrder.LITTLE_ENDIAN)
-    palette.foreach(c => buf.putInt(c.getRGB & 0x00ffffff))
+    palette.foreach(c => buf.putInt(c & 0x00ffffff))
     out.write(buf.array())
   }
 
@@ -127,16 +126,16 @@ object BMPImageInfo {
     val palette = if (colorDepth <= 8) {
       val paletteSize = buf.getInt()
       readPalette(in, if (paletteSize == 0) 1 << colorDepth else paletteSize)
-    } else Array.empty[Color]
+    } else Array.empty[Int]
 
     val topDown = height < 0
     BMPImageInfo(width, if (topDown) -height else height, horizPPM, vertPPM, colorDepth, palette, topDown)
   }
 
-  private def readPalette(in: ReaderInterface, size: Int): Array[Color] = {
+  private def readPalette(in: ReaderInterface, size: Int): Array[Int] = {
     val buf = readBuf(in, size * 4)
     buf.rewind()
-    Array.fill(size)(new Color(buf.getInt()))
+    Array.fill(size)(buf.getInt() & 0x00ffffff)
   }
 
   def read(in: ReaderInterface): BMPImageInfo = {

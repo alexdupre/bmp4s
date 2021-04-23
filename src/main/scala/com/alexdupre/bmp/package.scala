@@ -9,7 +9,8 @@ import scala.language.implicitConversions
 package object bmp {
 
   trait ReaderInterface extends AutoCloseable {
-    def read(buf: Array[Byte]): Unit
+    def read(buf: Array[Byte]): Unit = read(buf, 0, buf.length)
+    def read(buf: Array[Byte], offset: Int, length: Int): Unit
   }
 
   trait WriterInterface extends AutoCloseable {
@@ -23,10 +24,10 @@ package object bmp {
 
   implicit def InputStreamToReaderInterface(in: InputStream): ReaderInterface =
     new ReaderInterface {
-      override def read(buf: Array[Byte]): Unit = {
+      override def read(buf: Array[Byte], offset: Int, length: Int): Unit = {
         var n = 0
-        while (n < buf.length) {
-          val count = in.read(buf, n, buf.length - n)
+        while (n < length) {
+          val count = in.read(buf, offset + n, length - n)
           if (count < 0) throw new EOFException
           n += count
         }
@@ -36,8 +37,8 @@ package object bmp {
 
   implicit def ReadableByteChannelToReaderInterface(in: ReadableByteChannel): ReaderInterface =
     new ReaderInterface {
-      override def read(buf: Array[Byte]): Unit = {
-        val bb = ByteBuffer.wrap(buf)
+      override def read(buf: Array[Byte], offset: Int, length: Int): Unit = {
+        val bb = ByteBuffer.wrap(buf, offset, length)
         do {
           in.read(bb)
         } while (bb.hasRemaining)
@@ -47,18 +48,18 @@ package object bmp {
 
   implicit def RandomAccessFileToSeekableInterface(in: RandomAccessFile): SeekableInterface =
     new SeekableInterface {
-      override def position(): Long             = in.getFilePointer()
-      override def position(i: Long): Unit      = in.seek(i)
-      override def read(buf: Array[Byte]): Unit = in.readFully(buf)
-      override def close(): Unit                = in.close()
+      override def position(): Long                                       = in.getFilePointer()
+      override def position(i: Long): Unit                                = in.seek(i)
+      override def read(buf: Array[Byte], offset: Int, length: Int): Unit = in.readFully(buf, offset, length)
+      override def close(): Unit                                          = in.close()
     }
 
   implicit def SeekableByteChannelToSeekableInterface(in: SeekableByteChannel): SeekableInterface =
     new SeekableInterface {
       override def position(): Long        = in.position()
       override def position(i: Long): Unit = in.position(i)
-      override def read(buf: Array[Byte]): Unit = {
-        val bb = ByteBuffer.wrap(buf)
+      override def read(buf: Array[Byte], offset: Int, length: Int): Unit = {
+        val bb = ByteBuffer.wrap(buf, offset, length)
         do {
           in.read(bb)
         } while (bb.hasRemaining)
