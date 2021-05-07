@@ -135,7 +135,7 @@ object BMPImageInfo {
   private def readPalette(in: ReaderInterface, size: Int): Array[Int] = {
     val buf = readBuf(in, size * 4)
     buf.rewind()
-    Array.fill(size)(buf.getInt() & 0x00ffffff)
+    Array.fill(size)(0xff000000 | buf.getInt())
   }
 
   def read(in: ReaderInterface): BMPImageInfo = {

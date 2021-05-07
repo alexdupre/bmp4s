@@ -3,7 +3,7 @@ import scala.scalanative.build._
 name := "bmp4s"
 
 ThisBuild / organization := "com.alexdupre"
-ThisBuild / version := "0.5"
+ThisBuild / version := "0.5.1"
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := "2.13.5"
 ThisBuild / scalacOptions := List("-feature", "-unchecked", "-deprecation", "-explaintypes", "-encoding", "UTF8", "-language:postfixOps")

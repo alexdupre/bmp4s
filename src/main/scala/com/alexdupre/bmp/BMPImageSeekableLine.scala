@@ -31,8 +31,8 @@ class BMPImageSeekableLine(info: BMPImageInfo) {
       val rawLen = length * info.colorDepth / 8
       in.read(rawLine, 0, rawLen)
       val dataLine = wrappedRawLine()
-      for (i <- 0 until line.length) line(i + offset) = info.colorDepth match {
-        case 32 => dataLine.getInt() & 0xffffff
+      for (i <- 0 until line.length) line(i + offset) = 0xff000000 | info.colorDepth match {
+        case 32 => dataLine.getInt()
         case 24 =>
           val b = dataLine.get() & 0xff
           val g = dataLine.get() & 0xff

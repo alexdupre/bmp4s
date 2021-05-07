@@ -24,8 +24,8 @@ class BMPImageLine(info: BMPImageInfo) {
       require(line.length - offset >= info.width, "Output buffer is too small")
       in.read(rawLine)
       val dataLine = wrappedRawLine()
-      for (i <- 0 until line.length) line(i + offset) = info.colorDepth match {
-        case 32 => dataLine.getInt() & 0xffffff
+      for (i <- 0 until line.length) line(i + offset) = 0xff000000 | info.colorDepth match {
+        case 32 => dataLine.getInt()
         case 24 =>
           val b = dataLine.get() & 0xff
           val g = dataLine.get() & 0xff
